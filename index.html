@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Калькулятор зарплаты</title>
+  <meta name="description" content="Расчёт зарплаты и аванса по часам, ночным и праздничным">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%232a9d68'/><text x='32' y='46' font-size='40' font-family='Segoe UI,Arial' font-weight='700' fill='white' text-anchor='middle'>₽</text></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Калькулятор зарплаты</h1>
+    <div class="month-nav">
+      <button id="prevMonth" aria-label="Предыдущий месяц">‹</button>
+      <span id="monthLabel"></span>
+      <button id="nextMonth" aria-label="Следующий месяц">›</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="tabs" role="tablist">
+      <button data-mode="calendar" class="active">По графику</button>
+      <button data-mode="manual">Ввести часы вручную</button>
+    </div>
+
+    <!-- Режим: календарь -->
+    <section id="mode-calendar" class="panel">
+      <div class="template">
+        <label>Смена, ч <input id="tShift" type="number" min="0" max="24" step="0.5" inputmode="decimal"></label>
+        <label>Из них ночных, ч <input id="tNight" type="number" min="0" max="24" step="0.5" inputmode="decimal"></label>
+        <div class="weekdays" id="tWeekdays"></div>
+        <label class="check"><input id="tHolidays" type="checkbox"> Работаю в праздники</label>
+      </div>
+      <div class="legend">
+        <span><i class="sw work"></i>Смена</span>
+        <span><i class="sw extra"></i>Выход в выходной</span>
+        <span><i class="sw hol"></i>Праздник</span>
+        <span class="muted">Нажмите на день, чтобы изменить</span>
+      </div>
+      <div class="cal-head"><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span></div>
+      <div class="cal" id="cal"></div>
+      <div class="cal-foot">
+        <span id="calSummary" class="muted"></span>
+        <button id="resetMonth" class="link" hidden>Сбросить правки месяца</button>
+      </div>
+    </section>
+
+    <!-- Режим: вручную -->
+    <section id="mode-manual" class="panel" hidden>
+      <h3>За весь месяц</h3>
+      <div class="fields">
+        <label>Всего часов<input data-m="h" type="number" min="0" step="0.5" inputmode="decimal"></label>
+        <label>Из них ночных<input data-m="n" type="number" min="0" step="0.5" inputmode="decimal"></label>
+        <label>Из них праздничных<input data-m="p" type="number" min="0" step="0.5" inputmode="decimal"></label>
+        <label>Из них в выходной по графику<input data-m="d" type="number" min="0" step="0.5" inputmode="decimal"></label>
+      </div>
+      <h3>С 1 по 15 число (для аванса)</h3>
+      <div class="fields">
+        <label>Часов<input data-m="h15" type="number" min="0" step="0.5" inputmode="decimal"></label>
+        <label>Из них ночных<input data-m="n15" type="number" min="0" step="0.5" inputmode="decimal"></label>
+        <label>Праздничных + в выходной<input data-m="p15" type="number" min="0" step="0.5" inputmode="decimal"></label>
+      </div>
+    </section>
+
+    <!-- Результат -->
+    <section class="results">
+      <div class="card big"><div class="label">Всего на руки за месяц</div><div class="value" id="rNet">—</div><div class="sub" id="rGross"></div></div>
+      <div class="card"><div class="label">Аванс на руки</div><div class="value" id="rAdv">—</div><div class="sub" id="rAdvSub"></div></div>
+      <div class="card"><div class="label">Зарплата на руки (остаток)</div><div class="value" id="rRest">—</div><div class="sub">всего на руки − аванс</div></div>
+    </section>
+
+    <section class="panel">
+      <h3>Как посчитано</h3>
+      <table class="breakdown"><tbody id="breakdown"></tbody></table>
+      <p class="formula" id="formula"></p>
+      <p class="formula" id="formulaAdv"></p>
+    </section>
+
+    <details class="panel settings">
+      <summary>Ставки и коэффициенты</summary>
+      <div class="fields">
+        <label>Часовая тарифная ставка, ₽<input data-s="rate" type="number" min="0" step="0.01" inputmode="decimal"></label>
+        <label>Премия, ₽/час<input data-s="premium" type="number" min="0" step="0.01" inputmode="decimal"></label>
+        <label>Доплата за ночной час, ₽<input data-s="nightExtra" type="number" min="0" step="0.01" inputmode="decimal"></label>
+        <label>Доплата за праздничный / выходной час, ₽<input data-s="holidayExtra" type="number" min="0" step="0.01" inputmode="decimal"></label>
+        <label>Коэффициент<input data-s="coef" type="number" min="0" step="0.01" inputmode="decimal"></label>
+        <label>НДФЛ, %<input data-s="ndfl" type="number" min="0" max="100" step="0.1" inputmode="decimal"></label>
+      </div>
+      <button id="resetSettings" class="link">Вернуть значения по умолчанию</button>
+    </details>
+
+    <p class="foot muted">Все данные хранятся только в вашем браузере и никуда не отправляются. Расчёт примерный: итог в расчётном листке может отличаться на копейки из-за округлений.</p>
+  </main>
+
+  <dialog id="dayDialog">
+    <form id="dayForm" method="dialog">
+      <h3 id="dayTitle"></h3>
+      <div class="hol-name" id="dayHoliday"></div>
+      <div class="seg">
+        <label><input type="radio" name="s" value="off"><span>Выходной</span></label>
+        <label><input type="radio" name="s" value="work"><span>Смена</span></label>
+        <label><input type="radio" name="s" value="extra"><span>Выход в выходной</span></label>
+      </div>
+      <div class="fields two">
+        <label>Часов<input name="h" type="number" min="0" max="24" step="0.5" inputmode="decimal"></label>
+        <label>Из них ночных<input name="n" type="number" min="0" max="24" step="0.5" inputmode="decimal"></label>
+      </div>
+      <div class="actions">
+        <button type="button" id="dayReset" class="link">По графику</button>
+        <span class="spacer"></span>
+        <button type="button" data-close>Отмена</button>
+        <button type="submit" class="primary">Готово</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
