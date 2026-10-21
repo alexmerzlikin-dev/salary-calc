@@ -11,15 +11,14 @@
 
 Все ставки, график и правки дней хранятся в localStorage браузера — у каждого свои, на сервер ничего не уходит.
 
-## Деплой на Vercel
-Вариант 1 — через CLI, из этой папки:
+## Публикация — GitHub Pages
+Сайт: https://alexmerzlikin-dev.github.io/salary-calc/
+Обновляется автоматически после каждого push в ветку `main` (через 1–2 минуты):
 ```
-npx vercel          # предпросмотр
-npx vercel --prod   # боевой адрес
+git add -A
+git commit -m "что поменял"
+git push
 ```
-Framework Preset: **Other**, Build Command — пусто, Output Directory — `.` (корень).
-
-Вариант 2 — залить папку в GitHub-репозиторий и импортировать его на vercel.com/new.
 
 ## Локально
 Открыть `index.html` в браузере.
