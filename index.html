@@ -82,8 +82,8 @@
       <div class="fields">
         <label>Часовая тарифная ставка, ₽<input data-s="rate" type="number" min="0" step="0.01" inputmode="decimal"></label>
         <label>Премия, ₽/час<input data-s="premium" type="number" min="0" step="0.01" inputmode="decimal"></label>
-        <label>Доплата за ночной час, ₽<input data-s="nightExtra" type="number" min="0" step="0.01" inputmode="decimal"></label>
-        <label>Доплата за праздничный / выходной час, ₽<input data-s="holidayExtra" type="number" min="0" step="0.01" inputmode="decimal"></label>
+        <label>Доплата за ночной час, % от ставки + премии <span class="hint" id="nightHint"></span><input data-s="nightPct" type="number" min="0" step="0.1" inputmode="decimal"></label>
+        <label>Доплата за праздничный / выходной час, % от ставки + премии <span class="hint" id="holidayHint"></span><input data-s="holidayPct" type="number" min="0" step="1" inputmode="decimal"></label>
         <label>Коэффициент<input data-s="coef" type="number" min="0" step="0.01" inputmode="decimal"></label>
         <label>НДФЛ, %<input data-s="ndfl" type="number" min="0" max="100" step="0.1" inputmode="decimal"></label>
       </div>

@@ -104,3 +104,5 @@ dialog h3 { margin: 0; text-transform: capitalize; }
   .day .hrs { font-size: 10px; }
   .template label { width: calc(50% - 7px); }
 }
+
+.hint { color: var(--accent); font-weight: 600; }

@@ -10,7 +10,8 @@ const HOLIDAYS = {
 };
 
 const DEFAULTS = {
-  rate: 147.7, premium: 20, nightExtra: 33.54, holidayExtra: 167.7, coef: 1.7, ndfl: 13,
+  // доплаты — в % от (ставка + премия): так их считают кадры, и они сами пересчитываются при смене ставок
+  rate: 156.2, premium: 35, nightPct: 20, holidayPct: 100, coef: 1.7, ndfl: 13,
   shiftHours: 8, nightPerShift: 2, workDays: [1, 2, 3, 4, 5], workHolidays: true,
 };
 const MANUAL_DEFAULTS = { h: 165, n: 23, p: 6, d: 2, h15: 88, n15: 11, p15: 0 };
@@ -21,6 +22,13 @@ const store = {
 };
 
 let settings = { ...DEFAULTS, ...store.get('salary.settings', {}) };
+// переход со старой версии: доплаты были фиксированными суммами, ставки — 147,7 и 20
+if ('nightExtra' in settings) {
+  if (settings.rate === 147.7 && settings.premium === 20) { settings.rate = DEFAULTS.rate; settings.premium = DEFAULTS.premium; }
+  delete settings.nightExtra; delete settings.holidayExtra;
+}
+const nightRate = (s) => (s.rate + s.premium) * s.nightPct / 100;
+const holidayRate = (s) => (s.rate + s.premium) * s.holidayPct / 100;
 let overrides = store.get('salary.overrides', {});          // 'YYYY-MM-DD' -> { s, h, n }
 let manual = { ...MANUAL_DEFAULTS, ...store.get('salary.manual', {}) };
 let mode = store.get('salary.mode', 'calendar');
@@ -93,8 +101,8 @@ function calc(t, withPremium) {
   const s = settings;
   const base = t.h * s.rate;
   const premium = withPremium ? t.h * s.premium : 0;
-  const night = t.n * s.nightExtra;
-  const holiday = (t.p + t.d) * s.holidayExtra;
+  const night = t.n * nightRate(s);
+  const holiday = (t.p + t.d) * holidayRate(s);
   const sum = base + premium + night + holiday;
   const gross = sum * s.coef;
   const tax = gross * s.ndfl / 100;
@@ -156,8 +164,8 @@ function renderResult(all, half) {
   $('#breakdown').innerHTML = [
     row('Оплата по ставке', `${hrs(all.h)} × ${n(s.rate)} ₽`, rub(full.base)),
     row('Премия', `${hrs(all.h)} × ${n(s.premium)} ₽`, rub(full.premium)),
-    row('Доплата за ночные', `${hrs(all.n)} × ${n(s.nightExtra)} ₽`, rub(full.night)),
-    row('Доплата за праздничные и выходные', `(${n(all.p)} + ${n(all.d)}) ч × ${n(s.holidayExtra)} ₽`, rub(full.holiday)),
+    row('Доплата за ночные', `${hrs(all.n)} × ${n(nightRate(s))} ₽ (${n(s.nightPct)} % от ${n(s.rate + s.premium)})`, rub(full.night)),
+    row('Доплата за праздничные и выходные', `(${n(all.p)} + ${n(all.d)}) ч × ${n(holidayRate(s))} ₽`, rub(full.holiday)),
     row('Итого до коэффициента', '', rub(full.sum)),
     row(`С коэффициентом × ${n(s.coef)}`, '', rub(full.gross), 'total'),
     row(`НДФЛ ${n(s.ndfl)} %`, '', '−' + rub(full.tax), 'minus'),
@@ -165,9 +173,9 @@ function renderResult(all, half) {
   ].join('');
 
   $('#formula').textContent =
-    `(${n(all.h)} × (${n(s.rate)} + ${n(s.premium)}) + ${n(all.n)} × ${n(s.nightExtra)} + (${n(all.p)} + ${n(all.d)}) × ${n(s.holidayExtra)}) × ${n(s.coef)} = ${n(full.gross)}`;
+    `(${n(all.h)} × (${n(s.rate)} + ${n(s.premium)}) + ${n(all.n)} × ${n(nightRate(s))} + (${n(all.p)} + ${n(all.d)}) × ${n(holidayRate(s))}) × ${n(s.coef)} = ${n(full.gross)}`;
   $('#formulaAdv').textContent =
-    `Аванс: (${n(half.h)} × ${n(s.rate)} + ${n(half.n)} × ${n(s.nightExtra)} + ${n(half.p + half.d)} × ${n(s.holidayExtra)}) × ${n(s.coef)} = ${n(adv.gross)} → на руки ${n(adv.net)}`;
+    `Аванс: (${n(half.h)} × ${n(s.rate)} + ${n(half.n)} × ${n(nightRate(s))} + ${n(half.p + half.d)} × ${n(holidayRate(s))}) × ${n(s.coef)} = ${n(adv.gross)} → на руки ${n(adv.net)}`;
 }
 
 // ---------- события ----------
@@ -236,10 +244,14 @@ $$('[data-m]').forEach((inp) => {
 });
 
 // ставки
-function fillSettings() { $$('[data-s]').forEach((inp) => { inp.value = settings[inp.dataset.s]; }); }
-$$('[data-s]').forEach((inp) => inp.addEventListener('input', () => { settings[inp.dataset.s] = num(inp.value); save(); render(); }));
+function fillSettings() { $$('[data-s]').forEach((inp) => { inp.value = settings[inp.dataset.s]; }); fillHints(); }
+function fillHints() {
+  $('#nightHint').textContent = `= ${n(nightRate(settings))} ₽ за час`;
+  $('#holidayHint').textContent = `= ${n(holidayRate(settings))} ₽ за час`;
+}
+$$('[data-s]').forEach((inp) => inp.addEventListener('input', () => { settings[inp.dataset.s] = num(inp.value); fillHints(); save(); render(); }));
 $('#resetSettings').addEventListener('click', () => {
-  for (const k of ['rate', 'premium', 'nightExtra', 'holidayExtra', 'coef', 'ndfl']) settings[k] = DEFAULTS[k];
+  for (const k of ['rate', 'premium', 'nightPct', 'holidayPct', 'coef', 'ndfl']) settings[k] = DEFAULTS[k];
   fillSettings(); save(); render();
 });
 
